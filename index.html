@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixel Music Widget</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: transparent;
+      font-family: "Courier New", monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .player {
+      width: 340px;
+      background: #ffe6f7;
+      border: 4px solid #1f1f1f;
+      box-shadow: 6px 6px 0 #1f1f1f;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .screen {
+      background: #fffafc;
+      border: 3px solid #1f1f1f;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .pixel-cat {
+      font-size: 44px;
+      animation: bounce 0.8s infinite alternate;
+    }
+
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-6px); }
+    }
+
+    .bars {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      margin: 10px 0;
+      height: 24px;
+      align-items: end;
+    }
+
+    .bar {
+      width: 8px;
+      background: #ff5cb8;
+      border: 2px solid #1f1f1f;
+      animation: equalizer 0.6s infinite alternate;
+    }
+
+    .bar:nth-child(2) { animation-delay: 0.1s; }
+    .bar:nth-child(3) { animation-delay: 0.2s; }
+    .bar:nth-child(4) { animation-delay: 0.3s; }
+
+    @keyframes equalizer {
+      from { height: 6px; }
+      to { height: 24px; }
+    }
+
+    h2 {
+      font-size: 15px;
+      margin: 8px 0;
+    }
+
+    input {
+      width: 92%;
+      padding: 8px;
+      font-family: inherit;
+      border: 3px solid #1f1f1f;
+      margin-bottom: 8px;
+    }
+
+    button {
+      font-family: inherit;
+      background: #ffb3dc;
+      border: 3px solid #1f1f1f;
+      box-shadow: 3px 3px 0 #1f1f1f;
+      padding: 8px 14px;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    button:active {
+      transform: translate(3px, 3px);
+      box-shadow: none;
+    }
+
+    iframe {
+      width: 100%;
+      height: 160px;
+      border: 3px solid #1f1f1f;
+      background: white;
+    }
+
+    .message {
+      font-size: 12px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="player">
+    <div class="screen">
+      <div class="pixel-cat">🎧</div>
+
+      <div class="bars">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+
+      <h2>Pixel Music Player</h2>
+
+      <input id="songInput" placeholder="Paste YouTube or Spotify link..." />
+      <br />
+      <button onclick="updateSong()">Play Song</button>
+
+      <div id="playerArea" class="message">
+        Paste a link to start playing.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById("songInput");
+    const playerArea = document.getElementById("playerArea");
+
+    function getYouTubeID(url) {
+      try {
+        const u = new URL(url);
+
+        if (u.hostname.includes("youtube.com")) {
+          return u.searchParams.get("v");
+        }
+
+        if (u.hostname.includes("youtu.be")) {
+          return u.pathname.slice(1);
+        }
+      } catch {
+        return null;
+      }
+
+      return null;
+    }
+
+    function getSpotifyEmbed(url) {
+      try {
+        const u = new URL(url);
+
+        if (!u.hostname.includes("spotify.com")) return null;
+
+        return url
+          .replace("https://open.spotify.com/", "https://open.spotify.com/embed/")
+          .split("?")[0];
+      } catch {
+        return null;
+      }
+    }
+
+    function playSong(url) {
+      const youtubeID = getYouTubeID(url);
+      const spotifyEmbed = getSpotifyEmbed(url);
+
+      if (youtubeID) {
+        playerArea.innerHTML = `
+          <iframe
+            src="https://www.youtube.com/embed/${youtubeID}?autoplay=1&mute=1&controls=1"
+            allow="autoplay; encrypted-media"
+            allowfullscreen>
+          </iframe>
+          <div class="message">Playing from YouTube. Unmute manually if needed.</div>
+        `;
+        return;
+      }
+
+      if (spotifyEmbed) {
+        playerArea.innerHTML = `
+          <iframe
+            src="${spotifyEmbed}"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy">
+          </iframe>
+          <div class="message">Playing from Spotify.</div>
+        `;
+        return;
+      }
+
+      playerArea.innerHTML = "Invalid link. Use a YouTube or Spotify song link.";
+    }
+
+    function updateSong() {
+      const url = input.value.trim();
+
+      if (!url) {
+        playerArea.innerHTML = "Please paste a song link.";
+        return;
+      }
+
+      localStorage.setItem("pixelMusicSong", url);
+      playSong(url);
+    }
+
+    const savedSong = localStorage.getItem("pixelMusicSong");
+
+    if (savedSong) {
+      input.value = savedSong;
+      playSong(savedSong);
+    }
+  </script>
+</body>
+</html>
