@@ -163,37 +163,40 @@
 
     const songRef = doc(db, "widget", "currentSong");
 
-    function getYouTubeID(url) {
-      try {
-        const u = new URL(url);
+  function getYouTubeID(url) {
+  try {
+    const u = new URL(url);
 
-        if (u.hostname.includes("youtube.com")) {
-          return u.searchParams.get("v");
-        }
-
-        if (u.hostname.includes("youtu.be")) {
-          return u.pathname.slice(1).split("?")[0];
-        }
-      } catch {
-        return null;
-      }
-
-      return null;
+    if (
+      u.hostname.includes("youtube.com") ||
+      u.hostname.includes("music.youtube.com")
+    ) {
+      return u.searchParams.get("v");
     }
 
-    function getSpotifyEmbed(url) {
-      try {
-        const u = new URL(url);
-
-        if (!u.hostname.includes("spotify.com")) return null;
-
-        return url
-          .replace("https://open.spotify.com/", "https://open.spotify.com/embed/")
-          .split("?")[0];
-      } catch {
-        return null;
-      }
+    if (u.hostname.includes("youtu.be")) {
+      return u.pathname.slice(1).split("?")[0];
     }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function getSpotifyEmbed(url) {
+  try {
+    const u = new URL(url);
+
+    if (!u.hostname.includes("spotify.com")) return null;
+
+    return url
+      .replace("https://open.spotify.com/", "https://open.spotify.com/embed/")
+      .split("?")[0];
+  } catch {
+    return null;
+  }
+}
 
     function playSong(url) {
       if (!url) {
