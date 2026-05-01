@@ -17,7 +17,7 @@
     }
 
     .player {
-      width: 340px;
+      width: 350px;
       background: #ffe6f7;
       border: 4px solid #1f1f1f;
       box-shadow: 6px 6px 0 #1f1f1f;
@@ -29,10 +29,9 @@
       background: #fffafc;
       border: 3px solid #1f1f1f;
       padding: 12px;
-      margin-bottom: 12px;
     }
 
-    .pixel-cat {
+    .pixel {
       font-size: 44px;
       animation: bounce 0.8s infinite alternate;
     }
@@ -69,7 +68,8 @@
 
     h2 {
       font-size: 15px;
-      margin: 8px 0;
+      margin: 8px 0 12px;
+      color: #1f1f1f;
     }
 
     input {
@@ -78,6 +78,7 @@
       font-family: inherit;
       border: 3px solid #1f1f1f;
       margin-bottom: 8px;
+      outline: none;
     }
 
     button {
@@ -105,6 +106,7 @@
     .message {
       font-size: 12px;
       margin-top: 8px;
+      color: #1f1f1f;
     }
   </style>
 </head>
@@ -112,7 +114,7 @@
 <body>
   <div class="player">
     <div class="screen">
-      <div class="pixel-cat">🎧</div>
+      <div class="pixel">🎧</div>
 
       <div class="bars">
         <div class="bar"></div>
@@ -125,17 +127,41 @@
 
       <input id="songInput" placeholder="Paste YouTube or Spotify link..." />
       <br />
-      <button onclick="updateSong()">Play Song</button>
+      <button id="saveButton">Play for Everyone</button>
 
       <div id="playerArea" class="message">
-        Paste a link to start playing.
+        Loading shared song...
       </div>
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJY955oaY_QCEw37nSGvtkzZzhmWCMIBU",
+      authDomain: "notionmusic-5340b.firebaseapp.com",
+      projectId: "notionmusic-5340b",
+      storageBucket: "notionmusic-5340b.firebasestorage.app",
+      messagingSenderId: "987813218940",
+      appId: "1:987813218940:web:2ca53ee39284c9c473d7f9",
+      measurementId: "G-H90ZGJY11H"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
     const input = document.getElementById("songInput");
     const playerArea = document.getElementById("playerArea");
+    const saveButton = document.getElementById("saveButton");
+
+    const songRef = doc(db, "widget", "currentSong");
 
     function getYouTubeID(url) {
       try {
@@ -146,7 +172,7 @@
         }
 
         if (u.hostname.includes("youtu.be")) {
-          return u.pathname.slice(1);
+          return u.pathname.slice(1).split("?")[0];
         }
       } catch {
         return null;
@@ -170,6 +196,11 @@
     }
 
     function playSong(url) {
+      if (!url) {
+        playerArea.innerHTML = "No shared song saved yet.";
+        return;
+      }
+
       const youtubeID = getYouTubeID(url);
       const spotifyEmbed = getSpotifyEmbed(url);
 
@@ -197,10 +228,10 @@
         return;
       }
 
-      playerArea.innerHTML = "Invalid link. Use a YouTube or Spotify song link.";
+      playerArea.innerHTML = "Invalid link. Use a YouTube or Spotify link.";
     }
 
-    function updateSong() {
+    saveButton.addEventListener("click", async () => {
       const url = input.value.trim();
 
       if (!url) {
@@ -208,16 +239,29 @@
         return;
       }
 
-      localStorage.setItem("pixelMusicSong", url);
-      playSong(url);
-    }
+      try {
+        await setDoc(songRef, {
+          url: url,
+          updatedAt: new Date().toISOString()
+        });
 
-    const savedSong = localStorage.getItem("pixelMusicSong");
+        playerArea.innerHTML = "Saving song...";
+      } catch (error) {
+        console.error(error);
+        playerArea.innerHTML = "Error saving song. Check Firebase rules.";
+      }
+    });
 
-    if (savedSong) {
-      input.value = savedSong;
-      playSong(savedSong);
-    }
+    onSnapshot(songRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        playerArea.innerHTML = "No shared song saved yet.";
+        return;
+      }
+
+      const data = snapshot.data();
+      input.value = data.url || "";
+      playSong(data.url);
+    });
   </script>
 </body>
 </html>
